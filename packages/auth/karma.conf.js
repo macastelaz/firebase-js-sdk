@@ -29,7 +29,7 @@ module.exports = function (config) {
     );
   }
 
-  let browswers = getTestBrowsers(argv);
+  let browsers = getTestBrowsers(argv);
 
   const chromeHeadlessIndex = browsers.indexOf('ChromeHeadless');
   if ((process.env.CI || process.env.ACT) && chromeHeadlessIndex !== -1) {
