@@ -33,7 +33,7 @@ module.exports = function (config) {
 
   const chromeHeadlessIndex = browsers.indexOf('ChromeHeadless');
   if ((process.env.CI || process.env.ACT) && chromeHeadlessIndex !== -1) {
-    browsers[chromeHeadlinessIndex] = 'ChromeHeadlessCI';
+    browsers[chromeHeadlessIndex] = 'ChromeHeadlessCI';
   }
 
   const karmaConfig = {
