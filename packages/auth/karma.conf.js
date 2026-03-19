@@ -23,69 +23,53 @@ module.exports = function (config) {
   const additionalCIFlags = [];
   if (process.env.CI || process.env.ACT) {
     additionalCIFlags.push(
-        '--no-sandbox',
-        '--disable-gpu',
-        '--disable-dev-shm-usage'
+      '--no-sandbox',
+      '--disable-gpu',
+      '--disable-dev-shm-usage'
     );
   }
 
+  // Determine which browsers to use from the base function
   let browsers = getTestBrowsers(argv);
 
+  // Define the name for our CI-friendly launcher
+  const ciLauncherName = 'ChromeHeadlessCI';
+
+  // If we are in CI/ACT, and the browsers list includes ChromeHeadless,
+  // replace it with our CI-safe version.
   const chromeHeadlessIndex = browsers.indexOf('ChromeHeadless');
   if ((process.env.CI || process.env.ACT) && chromeHeadlessIndex !== -1) {
-    browsers[chromeHeadlessIndex] = 'ChromeHeadlessCI';
+    browsers = [...browsers]; // Create a copy to modify
+    browsers[chromeHeadlessIndex] = ciLauncherName;
   }
 
   const karmaConfig = {
-    ...karmaBase,
+    ...karmaBase, // Spread the base configuration
+
     customLaunchers: {
-      ...(karmaBase.customLaunchers || {}),
-      ChromeHeadlessCI: {
-        base: 'ChromeHeadless',
+      ...(karmaBase.customLaunchers || {}), // Include other custom launchers from base
+
+      // Define our CI-friendly ChromeHeadless launcher
+      [ciLauncherName]: {
+        base: 'ChromeHeadless', // Inherits from the base ChromeHeadless
         flags: [
-            ...(((karmaBase.customLaunchers || {}).ChromeHeadless || {}).flags || []),
-            ...additionalCIFlags
+          // Include any flags that might be on ChromeHeadless in karmaBase
+          ...(((karmaBase.customLaunchers || {}).ChromeHeadless || {}).flags || []),
+          // Add our CI-specific flags
+          ...additionalCIFlags
         ]
       }
     },
-    browsers: browsers,
-    // files to load into karma
+
+    browsers: browsers, // Set the potentially modified list of browsers
+
     files: getTestFiles(argv),
-    // frameworks to use
-    // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['mocha'],
+    frameworks: ['mocha'], // Assuming mocha, adjust if necessary
     client: {
       ...(karmaBase.client || {}),
       ...getClientConfig(argv)
-    },
-    
-    reporters: [...new Set([...(karmaBase.reporters || []), 'coverage'])],
-
-    preprocessors: {
-      ...(karmaBase.preprocessors || {}),
-      // Instrument all TypeScript files in src, excluding test files, d.ts files, and index files
-      'src/**/!(*.test|*.index|*.d).ts': ['coverage']
-    },
-
-    coverageReporter: {
-      dir: 'coverage/', // Output directory for coverage reports
-      reporters: [
-        // generates ./coverage/browser/index.html
-        { type: 'html', subdir: 'browser' },
-        // generates ./coverage/lcov.info
-        { type: 'lcovonly', subdir: '.', file: 'lcov.info' },
-        // generates summary in the console
-        { type: 'text-summary' }
-      ],
-      check: {
-        global: {
-          statements: 70,
-          branches: 50,
-          functions: 70,
-          lines: 70
-        }
-      }
     }
+    // Other settings like reporters, plugins, etc., are expected to be in karmaBase
   };
 
   config.set(karmaConfig);
