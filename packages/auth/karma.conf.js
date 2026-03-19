@@ -57,6 +57,34 @@ module.exports = function (config) {
     client: {
       ...(karmaBase.client || {}),
       ...getClientConfig(argv)
+    },
+    
+    reporters: [...new Set([...(karmaBase.reporters || []), 'coverage'])],
+
+    preprocessors: {
+      ...(karmaBase.preprocessors || {}),
+      // Instrument all TypeScript files in src, excluding test files, d.ts files, and index files
+      'src/**/!(*.test|*.index|*.d).ts': ['coverage']
+    },
+
+    coverageReporter: {
+      dir: 'coverage/', // Output directory for coverage reports
+      reporters: [
+        // generates ./coverage/browser/index.html
+        { type: 'html', subdir: 'browser' },
+        // generates ./coverage/lcov.info
+        { type: 'lcovonly', subdir: '.', file: 'lcov.info' },
+        // generates summary in the console
+        { type: 'text-summary' }
+      ]
+      check: {
+        global: {
+          statements: 70,
+          branches: 50,
+          functions: 70,
+          lines: 70
+        }
+      }
     }
   };
 
