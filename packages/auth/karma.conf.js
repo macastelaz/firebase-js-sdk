@@ -20,15 +20,45 @@ const webpackBase = require('../../config/webpack.test');
 const { argv } = require('yargs');
 
 module.exports = function (config) {
-  const karmaConfig = Object.assign({}, karmaBase, {
-    browsers: getTestBrowsers(argv),
+  const additionalCIFlags = [];
+  if (process.env.CI || process.env.ACT) {
+    additionalCIFlags.push(
+        '--no-sandbox',
+        '--disable-gpu',
+        '--disable-dev-shm-usage'
+    );
+  }
+
+  let browswers = getTestBrowsers(argv);
+
+  const chromeHeadlessIndex = browsers.indexOf('ChromeHeadless');
+  if ((process.env.CI || process.env.ACT) && chromeHeadlessIndex !== -1) {
+    browsers[chromeHeadlinessIndex] = 'ChromeHeadlessCI';
+  }
+
+  const karmaConfig = {
+    ...karmaBase,
+    customLaunchers: {
+      ...(karmaBase.customLaunchers || {}),
+      ChromeHeadlessCI: {
+        base: 'ChromeHeadless',
+        flags: [
+            ...(((karmaBase.customLaunchers || {}).ChromeHeadless || {}).flags || []),
+            ...additionalCIFlags
+        ]
+      }
+    },
+    browsers: browsers,
     // files to load into karma
     files: getTestFiles(argv),
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
     frameworks: ['mocha'],
-    client: Object.assign({}, karmaBase.client, getClientConfig(argv))
-  });
+    client: {
+      ...(karmaBase.client || {}),
+      ...getClientConfig(argv)
+    }
+  };
 
   config.set(karmaConfig);
 };
