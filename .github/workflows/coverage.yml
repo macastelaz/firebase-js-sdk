@@ -1,4 +1,4 @@
-name: Nightly Auth Coverage Report
+name: Nightly Auth Coverage Report attempt 2
 
 on:
   schedule:
