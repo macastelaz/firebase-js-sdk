@@ -76,7 +76,7 @@ module.exports = function (config) {
         { type: 'lcovonly', subdir: '.', file: 'lcov.info' },
         // generates summary in the console
         { type: 'text-summary' }
-      ]
+      ],
       check: {
         global: {
           statements: 70,
