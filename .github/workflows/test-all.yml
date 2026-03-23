@@ -73,11 +73,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    # install Chrome first, so the correct version of webdriver can be installed by chromedriver when setting up the repo
     - name: install Chrome stable
       run: |
         npx @puppeteer/browsers install chrome@stable
+    - uses: actions/checkout@v4 # <-- Restores Git context for Coveralls
     - name: Download build archive
       uses: actions/download-artifact@v4
       with:
@@ -103,12 +102,53 @@ jobs:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
     - name: Generate coverage file
       run: yarn ci:coverage
+    - name: Fix LCOV paths for Monorepo (test-the-rest)
+      run: |
+        cat << 'EOF' > fix-coverage.js
+        const fs = require('fs');
+        const path = require('path');
+
+        const lcovFile = './lcov-all.info';
+        const lines = fs.readFileSync(lcovFile, 'utf8').split('\n');
+        const pathCache = {};
+
+        function findRealFilePath(partialPath) {
+            if (pathCache[partialPath]) return pathCache[partialPath];
+            if (fs.existsSync(partialPath)) return partialPath;
+
+            const packagesDir = 'packages';
+            if (fs.existsSync(packagesDir)) {
+                const subDirs = fs.readdirSync(packagesDir);
+                for (const subDir of subDirs) {
+                    const fullPath = path.join(packagesDir, subDir, partialPath);
+                    if (fs.existsSync(fullPath)) {
+                        pathCache[partialPath] = fullPath;
+                        return fullPath;
+                    }
+                }
+            }
+            return partialPath;
+        }
+
+        const newLines = lines.map(line => {
+            if (line.startsWith('SF:')) {
+                const originalPath = line.substring(3);
+                return `SF:${findRealFilePath(originalPath)}`;
+            }
+            return line;
+        });
+
+        fs.writeFileSync(lcovFile, newLines.join('\n'));
+        console.log('LCOV paths fixed dynamically!');
+        EOF
+        node fix-coverage.js
     - name: Run coverage
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ./lcov-all.info
-        debug: true
+        flag-name: test-the-rest
+        parallel: true
       continue-on-error: true
 
   test-auth:
@@ -116,9 +156,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      # install Chrome first, so the correct version of webdriver can be installed by chromedriver
-      # when setting up the repo
-    - uses: actions/checkout@v4
     - name: install Chrome stable
       run: |
         npx @puppeteer/browsers install chrome@stable
@@ -127,6 +164,7 @@ jobs:
         echo "::warning ::${CHROME_VERSION_MISMATCH_MESSAGE}"
         echo "::warning ::Previously validated version: ${CHROME_VALIDATED_VERSION} vs. Installed version: $chromeVersionString"
         fi
+    - uses: actions/checkout@v4 # <-- Restores Git context for Coveralls
     - name: Download build archive
       uses: actions/download-artifact@v4
       with:
@@ -158,7 +196,8 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ./lcov-all.info
-        debug: true
+        flag-name: test-auth
+        parallel: true
       continue-on-error: true
 
   test-firestore:
@@ -166,11 +205,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    # install Chrome so the correct version of webdriver can be installed by chromedriver when setting up the repo
     - name: install Chrome stable
       run: |
         npx @puppeteer/browsers install chrome@stable
+    - uses: actions/checkout@v4 # <-- Restores Git context for Coveralls
     - name: Download build archive
       uses: actions/download-artifact@v4
       with:
@@ -195,13 +233,17 @@ jobs:
         EXPERIMENTAL_MODE: true
     - name: Generate coverage file
       run: yarn ci:coverage
+    - name: Fix LCOV paths for Monorepo (Firestore)
+      run: sed -i 's|SF:src/|SF:packages/firestore/src/|g' ./lcov-all.info
     - name: Run coverage
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ./lcov-all.info
-        debug: true
+        flag-name: test-firestore
+        parallel: true
       continue-on-error: true
+
   test-firestore-integration:
     strategy:
       fail-fast: false
@@ -211,11 +253,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    # install Chrome so the correct version of webdriver can be installed by chromedriver when setting up the repo
     - name: install Chrome stable
       run: |
         npx @puppeteer/browsers install chrome@stable
+    - uses: actions/checkout@v4
     - name: Download build archive
       uses: actions/download-artifact@v4
       with:
@@ -234,3 +275,14 @@ jobs:
       working-directory: integration/firestore
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
+
+  coveralls-finish:
+    name: Finalize Coveralls
+    needs: [test-the-rest, test-auth, test-firestore]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        parallel-finished: true
