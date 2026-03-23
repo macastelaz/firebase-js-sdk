@@ -107,6 +107,7 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ./lcov-all.info
+        debug: true
       continue-on-error: true
 
   test-auth:
@@ -153,6 +154,7 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ./lcov-all.info
+        debug: true
       continue-on-error: true
 
   test-firestore:
@@ -193,6 +195,7 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: ./lcov-all.info
+        debug: true
       continue-on-error: true
   test-firestore-integration:
     strategy:
