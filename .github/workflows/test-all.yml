@@ -73,6 +73,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
     # install Chrome first, so the correct version of webdriver can be installed by chromedriver when setting up the repo
     - name: install Chrome stable
       run: |
@@ -117,6 +118,7 @@ jobs:
     steps:
       # install Chrome first, so the correct version of webdriver can be installed by chromedriver
       # when setting up the repo
+    - uses: actions/checkout@v4
     - name: install Chrome stable
       run: |
         npx @puppeteer/browsers install chrome@stable
@@ -162,6 +164,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
     # install Chrome so the correct version of webdriver can be installed by chromedriver when setting up the repo
     - name: install Chrome stable
       run: |
@@ -206,6 +209,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
     # install Chrome so the correct version of webdriver can be installed by chromedriver when setting up the repo
     - name: install Chrome stable
       run: |
