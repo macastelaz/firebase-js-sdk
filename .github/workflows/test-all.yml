@@ -151,6 +151,8 @@ jobs:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
     - name: Generate coverage file
       run: yarn ci:coverage
+    - name: Fix LCOV paths for Monorepo (Auth)
+      run: sed -i 's|SF:src/|SF:packages/auth/src/|g' ./lcov-all.info
     - name: Run coverage
       uses: coverallsapp/github-action@master
       with:
