@@ -189,6 +189,12 @@ jobs:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
     - name: Generate coverage file
       run: yarn ci:coverage
+    - name: Hunt for missing coverage files
+      run: |
+        echo "=== Hunting for LCOV files ==="
+        find . -type f -name "*lcov*.info"
+        echo "=== Hunting for raw JSON coverage data ==="
+        find . -type f -name "coverage-final.json"
     - name: Fix LCOV paths for Monorepo (Auth)
       run: |
         # 1. Fix standard Node paths
