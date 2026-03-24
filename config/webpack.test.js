@@ -112,3 +112,24 @@ module.exports = {
     })
   ]
 };
+
+// Append this to the very bottom of config/webpack.test.js
+if (process.env.CI || process.env.COVERAGE === 'true') {
+  module.exports.module.rules.push({
+    test: /\.tsx?$/,
+    // 'post' ensures this runs AFTER ts-loader converts TS to ES2020 JS
+    enforce: 'post',
+    use: {
+      loader: 'babel-loader',
+      options: {
+        plugins: ['istanbul'] // Uses babel-plugin-istanbul to add coverage counters
+      }
+    },
+    include: path.resolve(__dirname, '../../packages'),
+    exclude: [
+      /node_modules/,
+      /\.test\.tsx?$/, // Don't instrument the tests themselves
+      /test\//
+    ]
+  });
+}
