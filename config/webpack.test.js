@@ -125,7 +125,7 @@ if (process.env.CI || process.env.COVERAGE === 'true') {
         plugins: ['istanbul'] // Uses babel-plugin-istanbul to add coverage counters
       }
     },
-    include: path.resolve(__dirname, '../../packages'),
+    include: path.resolve(__dirname, '../packages'),
     exclude: [
       /node_modules/,
       /\.test\.tsx?$/, // Don't instrument the tests themselves
