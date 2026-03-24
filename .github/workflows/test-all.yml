@@ -100,6 +100,13 @@ jobs:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
     - name: Generate coverage file
       run: yarn ci:coverage
+    - name: Inspect Raw Browser Coverage
+      run: |
+        echo "=== Browser LCOV File Size ==="
+        find ./packages/auth/coverage/browser -type f -name "lcov.info" -exec ls -lh {} +
+        
+        echo "=== First 20 Source Paths (Before Sed) ==="
+        find ./packages/auth/coverage/browser -type f -name "lcov.info" -exec grep "^SF:" {} + | head -n 20
     - name: Fix LCOV paths for Monorepo (test-the-rest)
       run: |
         cat << 'EOF' > fix-coverage.js
@@ -187,6 +194,13 @@ jobs:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
     - name: Generate coverage file
       run: yarn ci:coverage
+    - name: Inspect Raw Browser Coverage
+      run: |
+        echo "=== Browser LCOV File Size ==="
+        find ./packages/auth/coverage/browser -type f -name "lcov.info" -exec ls -lh {} +
+        
+        echo "=== First 20 Source Paths (Before Sed) ==="
+        find ./packages/auth/coverage/browser -type f -name "lcov.info" -exec grep "^SF:" {} + | head -n 20
     - name: Merge and Fix Auth LCOV files
       run: |
         # 1. Smash all Node and Browser coverage files into one giant file
@@ -244,6 +258,13 @@ jobs:
         EXPERIMENTAL_MODE: true
     - name: Generate coverage file
       run: yarn ci:coverage
+    - name: Inspect Raw Browser Coverage
+      run: |
+        echo "=== Browser LCOV File Size ==="
+        find ./packages/auth/coverage/browser -type f -name "lcov.info" -exec ls -lh {} +
+        
+        echo "=== First 20 Source Paths (Before Sed) ==="
+        find ./packages/auth/coverage/browser -type f -name "lcov.info" -exec grep "^SF:" {} + | head -n 20
     - name: Fix LCOV paths for Monorepo (Firestore)
       run: sed -i 's|SF:src/|SF:packages/firestore/src/|g' ./lcov-all.info
     - name: Run coverage
@@ -289,7 +310,8 @@ jobs:
 
   coveralls-finish:
     name: Finalize Coveralls
-    needs: [test-the-rest, test-auth, test-firestore]
+    # needs: [test-the-rest, test-auth, test-firestore]
+    needs: [test-auth]
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
