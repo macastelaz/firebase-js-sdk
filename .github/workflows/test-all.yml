@@ -189,25 +189,26 @@ jobs:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
     - name: Generate coverage file
       run: yarn ci:coverage
-    - name: Hunt for missing coverage files
+    - name: Merge and Fix Auth LCOV files
       run: |
-        echo "=== Hunting for LCOV files ==="
-        find . -type f -name "*lcov*.info"
-        echo "=== Hunting for raw JSON coverage data ==="
-        find . -type f -name "coverage-final.json"
-    - name: Fix LCOV paths for Monorepo (Auth)
-      run: |
-        # 1. Fix standard Node paths
-        sed -i 's|SF:src/|SF:packages/auth/src/|g' ./lcov-all.info
+        # 1. Smash all Node and Browser coverage files into one giant file
+        find ./packages/auth/coverage -type f -name "lcov.info" -exec cat {} + > ./lcov-all-auth.info
         
-        # 2. Fix Webpack/Karma paths (strips out the webpack:// prefix)
-        sed -i 's|SF:webpack://[^/]*/src/|SF:packages/auth/src/|g' ./lcov-all.info
-        sed -i 's|SF:webpack:///src/|SF:packages/auth/src/|g' ./lcov-all.info
+        # 2. Fix standard Node paths
+        sed -i 's|SF:src/|SF:packages/auth/src/|g' ./lcov-all-auth.info
+        
+        # 3. Fix Karma/Webpack paths from the browser coverage
+        sed -i 's|SF:webpack://[^/]*/src/|SF:packages/auth/src/|g' ./lcov-all-auth.info
+        sed -i 's|SF:webpack:///src/|SF:packages/auth/src/|g' ./lcov-all-auth.info
+        
+        # Just in case Webpack used the absolute package path
+        sed -i 's|SF:webpack://[^/]*/packages/auth/src/|SF:packages/auth/src/|g' ./lcov-all-auth.info
+
     - name: Run coverage
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ./lcov-all.info
+        path-to-lcov: ./lcov-all-auth.info # <-- Use the new combined file
         flag-name: test-auth
         parallel: true
       continue-on-error: true
