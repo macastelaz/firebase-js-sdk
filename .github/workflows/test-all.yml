@@ -191,6 +191,8 @@ jobs:
       run: yarn ci:coverage
     - name: Fix LCOV paths for Monorepo (Auth)
       run: sed -i 's|SF:src/|SF:packages/auth/src/|g' ./lcov-all.info
+    - name: Debug Surviving LCOV Paths
+      run: grep -o '^SF:.*' ./lcov-all.info | sort | uniq -c
     - name: Run coverage
       uses: coverallsapp/github-action@master
       with:
