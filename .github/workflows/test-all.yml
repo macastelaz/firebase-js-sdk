@@ -71,7 +71,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    # install Chrome first, so the correct version of webdriver can be installed by chromedriver when setting up the repo
     - name: install Chrome stable
       run: |
         npx @puppeteer/browsers install chrome@stable
@@ -155,8 +154,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      # install Chrome first, so the correct version of webdriver can be installed by chromedriver
-      # when setting up the repo
     - name: install Chrome stable
       run: |
         npx @puppeteer/browsers install chrome@stable
@@ -219,7 +216,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    # install Chrome so the correct version of webdriver can be installed by chromedriver when setting up the repo
     - name: install Chrome stable
       run: |
         npx @puppeteer/browsers install chrome@stable
@@ -258,6 +254,7 @@ jobs:
         flag-name: test-firestore
         parallel: true
       continue-on-error: true
+
   test-firestore-integration:
     strategy:
       fail-fast: false
@@ -267,7 +264,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    # install Chrome so the correct version of webdriver can be installed by chromedriver when setting up the repo
     - name: install Chrome stable
       run: |
         npx @puppeteer/browsers install chrome@stable

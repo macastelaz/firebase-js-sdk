@@ -1,0 +1,93 @@
+name: Nightly Auth Coverage Report attempt 2
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # Runs at 5:00 AM UTC every day
+  workflow_dispatch: # Allows manual triggering from the Actions tab
+
+jobs:
+  generate_coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn' # Enable built-in Yarn caching
+
+    - name: Enable Corepack and Set Yarn Version
+      run: |
+        corepack enable
+        yarn set version 1.22.19
+        echo "Yarn version: $(yarn --version)"
+      shell: bash
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Restore build cache
+      uses: actions/cache@v4
+      id: build-cache
+      with:
+        path: |
+          packages/*/dist
+        key: ${{ runner.os }}-build-${{ hashFiles('**/yarn.lock') }}-${{ hashFiles('packages/**.[jt]s', 'packages/**.json', '!**/package-lock.json', '!**/dist/**') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ hashFiles('**/yarn.lock') }}-
+
+    - name: Build all packages
+      if: steps.build-cache.outputs.cache-hit != 'true'
+      run: yarn build
+
+    - name: Install Chrome Dependencies
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y --no-install-recommends \
+          apt-transport-https \
+          ca-certificates \
+          libnspr4 \
+          libnss3 \
+          libatk1.0-0 \
+          libatk-bridge2.0-0 \
+          libcups2 \
+          libdrm2 \
+          libgbm1 \
+          libxkbcommon0 \
+          libxrandr2 \
+          libxtst6 \
+          libpango-1.0-0 \
+          libcairo2 \
+          libasound2 \
+          libfontconfig1 \
+          libgdk-pixbuf-2.0-0 \
+          libglib2.0-0 \
+          libgtk-3-0
+      shell: bash
+
+    - name: Setup Chrome
+      uses: browser-actions/setup-chrome@latest
+      with:
+        chrome-version: stable
+
+    - name: Run auth tests and generate coverage
+      working-directory: ./packages/auth
+      run: yarn test:browser:unit
+
+    - name: Archive HTML coverage report
+      if: always() && env.ACT != 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: auth-coverage-html-report
+        path: ./packages/auth/coverage/
+        retention-days: 14
+
+    - name: Upload Auth Coverage to Coveralls
+      if: success() && env.ACT != 'true'
+      uses: coverallsapp/github-action@v2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ./packages/auth/coverage/lcov.info # Verify this path is correct for unit test output
+        flag-name: nightly-auth

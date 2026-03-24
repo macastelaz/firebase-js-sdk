@@ -20,15 +20,57 @@ const webpackBase = require('../../config/webpack.test');
 const { argv } = require('yargs');
 
 module.exports = function (config) {
-  const karmaConfig = Object.assign({}, karmaBase, {
-    browsers: getTestBrowsers(argv),
-    // files to load into karma
+  const additionalCIFlags = [];
+  if (process.env.CI || process.env.ACT) {
+    additionalCIFlags.push(
+      '--no-sandbox',
+      '--disable-gpu',
+      '--disable-dev-shm-usage'
+    );
+  }
+
+  // Determine which browsers to use from the base function
+  let browsers = getTestBrowsers(argv);
+
+  // Define the name for our CI-friendly launcher
+  const ciLauncherName = 'ChromeHeadlessCI';
+
+  // If we are in CI/ACT, and the browsers list includes ChromeHeadless,
+  // replace it with our CI-safe version.
+  const chromeHeadlessIndex = browsers.indexOf('ChromeHeadless');
+  if ((process.env.CI || process.env.ACT) && chromeHeadlessIndex !== -1) {
+    browsers = [...browsers]; // Create a copy to modify
+    browsers[chromeHeadlessIndex] = ciLauncherName;
+  }
+
+  const karmaConfig = {
+    ...karmaBase, // Spread the base configuration
+
+    customLaunchers: {
+      ...(karmaBase.customLaunchers || {}), // Include other custom launchers from base
+
+      // Define our CI-friendly ChromeHeadless launcher
+      [ciLauncherName]: {
+        base: 'ChromeHeadless', // Inherits from the base ChromeHeadless
+        flags: [
+          // Include any flags that might be on ChromeHeadless in karmaBase
+          ...(((karmaBase.customLaunchers || {}).ChromeHeadless || {}).flags || []),
+          // Add our CI-specific flags
+          ...additionalCIFlags
+        ]
+      }
+    },
+
+    browsers: browsers, // Set the potentially modified list of browsers
+
     files: getTestFiles(argv),
-    // frameworks to use
-    // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['mocha'],
-    client: Object.assign({}, karmaBase.client, getClientConfig(argv))
-  });
+    frameworks: ['mocha'], // Assuming mocha, adjust if necessary
+    client: {
+      ...(karmaBase.client || {}),
+      ...getClientConfig(argv)
+    }
+    // Other settings like reporters, plugins, etc., are expected to be in karmaBase
+  };
 
   config.set(karmaConfig);
 };
