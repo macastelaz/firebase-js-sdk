@@ -16,7 +16,6 @@ name: Test All Packages
 
 on: 
   pull_request:
-  workflow_dispatch:
 
 env:
   # make chromedriver detect installed Chrome version and download the corresponding driver
@@ -194,13 +193,6 @@ jobs:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_CLI_TOKEN }}
     - name: Generate coverage file
       run: yarn ci:coverage
-    - name: Inspect Raw Browser Coverage
-      run: |
-        echo "=== Browser LCOV File Size ==="
-        find ./packages/auth/coverage/browser -type f -name "lcov.info" -exec ls -lh {} +
-        
-        echo "=== First 20 Source Paths (Before Sed) ==="
-        find ./packages/auth/coverage/browser -type f -name "lcov.info" -exec grep "^SF:" {} + | head -n 20
     - name: Merge and Fix Auth LCOV files
       run: |
         # 1. Smash all Node and Browser coverage files into one giant file
@@ -208,14 +200,6 @@ jobs:
         
         # 2. Fix standard Node paths
         sed -i 's|SF:src/|SF:packages/auth/src/|g' ./lcov-all-auth.info
-        
-        # 3. Fix Karma/Webpack paths from the browser coverage
-        sed -i 's|SF:webpack://[^/]*/src/|SF:packages/auth/src/|g' ./lcov-all-auth.info
-        sed -i 's|SF:webpack:///src/|SF:packages/auth/src/|g' ./lcov-all-auth.info
-        
-        # Just in case Webpack used the absolute package path
-        sed -i 's|SF:webpack://[^/]*/packages/auth/src/|SF:packages/auth/src/|g' ./lcov-all-auth.info
-
     - name: Run coverage
       uses: coverallsapp/github-action@master
       with:
@@ -310,8 +294,7 @@ jobs:
 
   coveralls-finish:
     name: Finalize Coveralls
-    # needs: [test-the-rest, test-auth, test-firestore]
-    needs: [test-auth]
+    needs: [test-the-rest, test-auth, test-firestore]
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
